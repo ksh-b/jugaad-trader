@@ -55,7 +55,7 @@ class Zerodha(KiteConnect):
 
     def load_session(self, path=None):
 
-        if path == None:
+        if path is None:
             path = os.path.join(click.get_app_dir(CLI_NAME), ".zsession")
         try:
             with open(path, "rb") as fp:
@@ -67,7 +67,7 @@ class Zerodha(KiteConnect):
         self.user_id = self.reqsession.cookies['user_id']
 
     def load_creds(self, path=None):
-        if path == None:
+        if path is None:
             path = os.path.join(click.get_app_dir(CLI_NAME), ".zcred")
         config = configparser.ConfigParser()
         try:
