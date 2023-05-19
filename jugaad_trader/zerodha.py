@@ -50,7 +50,7 @@ class Zerodha(KiteConnect):
         self.url_patch = '/oms'
         # self._routes["user.profile"] = "/user/profile/full"
 
-    def set_access_token(self, _):
+    def set_access_token(self):
         self.load_session()
 
     def load_session(self, path=None):
