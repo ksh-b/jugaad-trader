@@ -1,6 +1,8 @@
+import logging
+
 from kiteconnect import KiteTicker
 
-from jugaad_trader.zerodha import log
+log = logging.getLogger(__name__)
 
 
 class ZerodhaKiteTicker(KiteTicker):
