@@ -1,29 +1,19 @@
-import csv
-import json
-import hashlib
-import logging
-import datetime
-import time
-import operator
-import json
 import configparser
+import json
+import logging
 import os
 import pickle
 import urllib
 
-
-import requests
 import click
+import kiteconnect.exceptions as ex
+import requests
+from bs4 import BeautifulSoup
+from kiteconnect import KiteConnect
 from six.moves.urllib.parse import urljoin
 
-
-from kiteconnect import KiteConnect
-from .kiteticker import ZerodhaKiteTicker
-import kiteconnect.exceptions as ex
-from bs4 import BeautifulSoup
-
 from jugaad_trader.util import CLI_NAME
-
+from .kiteticker import ZerodhaKiteTicker
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +21,8 @@ base_url = "https://kite.zerodha.com"
 login_url = "https://kite.zerodha.com/api/login"
 twofa_url = "https://kite.zerodha.com/api/twofa"
 instruments_url = "https://api.kite.trade/instruments"
+
+
 class Zerodha(KiteConnect):
     """
         TO DO:
@@ -39,18 +31,20 @@ class Zerodha(KiteConnect):
         
     """
     _default_root_uri = "https://kite.zerodha.com"
+
     def __init__(self, user_id=None, password=None, twofa=None):
-    
+
         self.user_id = user_id
         self.password = password
         self.twofa = twofa
-    
+
         super().__init__(api_key="")
         self.s = self.reqsession = requests.Session()
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36",
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36",
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-                    }
+            }
         self.reqsession.headers.update(headers)
         self.chunkjs = {}
         self.url_patch = '/oms'
@@ -60,25 +54,27 @@ class Zerodha(KiteConnect):
         self.load_session()
 
     def load_session(self, path=None):
-        
-        if path==None:
+
+        if path == None:
             path = os.path.join(click.get_app_dir(CLI_NAME), ".zsession")
         try:
             with open(path, "rb") as fp:
                 self.reqsession = pickle.load(fp)
         except FileNotFoundError:
-            raise FileNotFoundError("\n\nCould not find the session, Please start a session using \n\n$ jtrader zerodha startsession")
+            raise FileNotFoundError(
+                "\n\nCould not find the session, Please start a session using \n\n$ jtrader zerodha startsession")
         self.enc_token = self.reqsession.cookies['enctoken']
         self.user_id = self.reqsession.cookies['user_id']
 
     def load_creds(self, path=None):
-        if path==None:
+        if path == None:
             path = os.path.join(click.get_app_dir(CLI_NAME), ".zcred")
         config = configparser.ConfigParser()
         try:
             config.read(path)
         except FileNotFoundError:
-            raise FileNotFoundError("\n\nCould not find the credentials, Please save the credentials using \n\n$ jtrader zerodha savecreds")
+            raise FileNotFoundError(
+                "\n\nCould not find the credentials, Please save the credentials using \n\n$ jtrader zerodha savecreds")
         creds = config['CREDENTIALS']
         self.user_id = creds['user_id']
         self.password = creds['password']
@@ -86,25 +82,24 @@ class Zerodha(KiteConnect):
 
     def _user_agent(self):
         return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36"
-    
+
     def login_step1(self):
         self.r = self.reqsession.get(base_url)
-        self.r = self.reqsession.post(login_url, data={"user_id": self.user_id, "password":self.password})
+        self.r = self.reqsession.post(login_url, data={"user_id": self.user_id, "password": self.password})
         j = json.loads(self.r.text)
         return j
 
     def login_step2(self, j):
-        data = {"user_id": self.user_id, "request_id": j['data']["request_id"], "twofa_value": self.twofa }
+        data = {"user_id": self.user_id, "request_id": j['data']["request_id"], "twofa_value": self.twofa}
         self.r = self.s.post(twofa_url, data=data)
         j = json.loads(self.r.text)
         return j
-
 
     def login(self):
         j = self.login_step1()
         if j['status'] == 'error':
             raise Exception(j['message'])
-        
+
         j = self.login_step2(j)
         if j['status'] == 'error':
             raise Exception(j['message'])
@@ -121,26 +116,26 @@ class Zerodha(KiteConnect):
         h['sec-fetch-dest'] = 'empty'
         h['x-kite-userid'] = self.user_id
         return h
-    
+
     def _request(self, route, method, url_args=None, params=None,
                  is_json=False, query_params=None):
         if url_args:
             uri = self._routes[route].format(**url_args)
         else:
-            uri = self._routes[route] 
+            uri = self._routes[route]
 
         url = urljoin(self.root, self.url_patch + uri)
-        
+
         # prepare url query params
         if method in ["GET", "DELETE"]:
             query_params = params
-
 
         # Custom headers
         headers = self.custom_headers()
 
         if self.debug:
-            log.debug("Request: {method} {url} {params} {headers}".format(method=method, url=url, params=params, headers=headers))
+            log.debug("Request: {method} {url} {params} {headers}".format(method=method, url=url, params=params,
+                                                                          headers=headers))
 
         try:
             r = self.reqsession.request(method,
@@ -185,7 +180,7 @@ class Zerodha(KiteConnect):
             raise ex.DataException("Unknown Content-Type ({content_type}) with response: ({content})".format(
                 content_type=r.headers["content-type"],
                 content=r.content))
-    
+
     def get_chunk_js(self):
         self.r = self.reqsession.get(urljoin(base_url, '/dashboard'))
         html = self.r.text
@@ -197,42 +192,45 @@ class Zerodha(KiteConnect):
         url = urljoin(base_url, tag.attrs.get("href"))
         self.r = self.reqsession.get(url)
         return self.r.text
-    
+
     def chunk_to_json(self, js):
         start = js.find('{"months"')
         end = js.find("\')}}])")
-        jtxt = js[start:end].replace('\\','')
+        jtxt = js[start:end].replace('\\', '')
         self.chunkjs = json.loads(jtxt)
         return self.chunkjs
-    
+
     def instruments(self, exchange=None):
         if exchange:
             self.r = self.reqsession.get(instruments_url + "/{}".format(exchange))
         else:
             self.r = self.reqsession.get(instruments_url)
         return self._parse_instruments(self.r.text)
-        
+
     def close(self):
         self.reqsession.close()
-   
-    
+
     def ticker(self, api_key='kitefront', enctoken=None, userid=None):
         if enctoken is not None:
             self.enctoken = self.r.cookies['enc_token']
         if userid is not None:
             self.user_id = self.user_id
         if self.user_id is None:
-            raise Exception("\nCould not find the session, Please start a session using \n\n$ jtrader zerodha startsession")
-        return ZerodhaKiteTicker(api_key=api_key, access_token=urllib.parse.quote_plus(self.enc_token)+'&user_id='+self.user_id, root='wss://ws.zerodha.com')
-                            
+            raise Exception(
+                "\nCould not find the session, Please start a session using \n\n$ jtrader zerodha startsession")
+        return ZerodhaKiteTicker(api_key=api_key,
+                                 access_token=urllib.parse.quote_plus(self.enc_token) + '&user_id=' + self.user_id,
+                                 root='wss://ws.zerodha.com')
+
+
 class Console(Zerodha):
     """
         Experimental support for Zerodha backoffice platform Coin
     """
     _default_root_uri = "https://console.zerodha.com"
-    api_key = "console" # API key for Coin
+    api_key = "console"  # API key for Coin
     _routes = {
-        "login":"/kite/login",
+        "login": "/kite/login",
         "status": "/api/user/status",
         "user_profile": "/api/user_profile/status",
         "dashboard": "/api/dashboard",
@@ -249,36 +247,33 @@ class Console(Zerodha):
         "interest_statement": "/api/funds/interest_statement",
         "mandate": "/api/mandate"
     }
+
     def __init__(self, z):
         """
             args:
                 z - Instance of Zerodha class
         """
-        
+
         super().__init__(z.user_id, z.password, z.twofa)
         self._root = self._default_root_uri
 
         self.url_patch = ""
         self.reqsession = z.reqsession
-        headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36",
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36",
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-                    }
+            }
         self.reqsession.headers.update(headers)
-        self.console_session = "" 
-        self.public_token = "" 
-        self.register_functions() 
-    def custom_headers(self):
-        h = {}
-        h['referer'] = 'https://console.zerodha.com/'
-        h['x-kite-version'] = '3'
-        h['sec-fetch-site'] = 'same-origin'
-        h['sec-fetch-mode'] = 'cors'
-        h['sec-fetch-dest'] = 'empty'
-        h['user-agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36"
+        self.console_session = ""
+        self.public_token = ""
+        self.register_functions()
 
-        return h
-    
+    def custom_headers(self):
+        return {'referer': 'https://console.zerodha.com/', 'x-kite-version': '3', 'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty',
+                'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36"}
+
 
     def login(self):
         """
@@ -287,25 +282,27 @@ class Console(Zerodha):
             automatically            
         """
         url = self._root + self._routes["login"]
-        self.r = self.reqsession.get(url) 
+        self.r = self.reqsession.get(url)
         if self.r.url == 'https://console.zerodha.com/dashboard':
             cookies = self.reqsession.cookies.get_dict('console.zerodha.com')
             self.console_session = cookies['session']
             return True
         else:
             raise Exception("Login failed or Kite session expired")
-    
+
     def factory_functions(self, route, docstring=""):
         """
             All APIs used by console end up sendinga a get request with some
             data, hence creating a fatory function which will generate a
             function to send GET requests
         """
+
         def generic_function(**kwargs):
             return self._get(route, params=kwargs)
+
         generic_function.__doc__ = docstring
         return generic_function
-    
+
     def register_functions(self):
         self.dashboard = self.factory_functions("dashboard")
         self.account_values = self.factory_functions("account_values")
@@ -320,6 +317,7 @@ class Console(Zerodha):
         self.ledger = self.factory_functions("ledger")
         self.interest_statement = self.factory_functions("interest_statement")
         self.mandate = self.factory_functions("mandate")
-   
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     pass

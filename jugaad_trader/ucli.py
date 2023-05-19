@@ -1,10 +1,9 @@
-import os
 import configparser
-import pickle
-import click
-from jugaad_trader import Upstox
-from jugaad_trader.util import CLI_NAME
+import os
 
+import click
+
+from jugaad_trader.util import CLI_NAME
 
 app_dir = click.get_app_dir(CLI_NAME)
 if not os.path.exists(app_dir):
@@ -12,6 +11,7 @@ if not os.path.exists(app_dir):
 
 cred_file = '.ucred'
 session_file = '.usession'
+
 
 @click.group()
 def upstox():
@@ -22,6 +22,7 @@ def upstox():
     """
     pass
 
+
 @upstox.command()
 def savecreds():
     """Saves your creds in the APP config directory"""
@@ -31,11 +32,12 @@ def savecreds():
     twofa = click.prompt("Pin >", hide_input=True)
     config = configparser.ConfigParser()
     config['CREDENTIALS'] = {'user_id': user_id,
-                                'password': password,
-                                'twofa': twofa}
+                             'password': password,
+                             'twofa': twofa}
     with open(os.path.join(app_dir, cred_file), "w") as fp:
         config.write(fp)
         click.echo(click.style("Saved credentials successfully", fg='green'))
+
 
 @upstox.command()
 def configdir():
@@ -56,8 +58,9 @@ def rm(config):
         except FileNotFoundError:
             click.echo("Could not find any credentials, you can save it again using 'jtrader upstox savecreds'")
         else:
-            click.echo("Successfully deleted credentials config, you can save it again using 'jtrader upstox savecreds`")
-    
+            click.echo(
+                "Successfully deleted credentials config, you can save it again using 'jtrader upstox savecreds`")
+
     if config == "SESSION":
         try:
             os.remove(os.path.join(app_dir, session_file))
@@ -65,4 +68,3 @@ def rm(config):
             click.echo("Could not find the session config, you can save it again using 'jtrader upstox startsession'")
         else:
             click.echo("Successfully deleted, you can save it again using 'jtrader upstox startsession'")
- 

@@ -5,13 +5,13 @@ import click
 from jugaad_trader import Zerodha
 from jugaad_trader.util import CLI_NAME
 
-
 app_dir = click.get_app_dir(CLI_NAME)
 if not os.path.exists(app_dir):
     os.makedirs(app_dir)
 
 cred_file = '.zcred'
 session_file = '.zsession'
+
 
 @click.group()
 def zerodha():
@@ -21,6 +21,7 @@ def zerodha():
         $ jtrader zerodha startsession
     """
     pass
+
 
 @zerodha.command()
 def startsession():
@@ -48,6 +49,7 @@ def startsession():
         pickle.dump(z.reqsession, fp)
     click.echo("Saved session successfully")
 
+
 @zerodha.command()
 def savecreds():
     """Saves your creds in the APP config directory"""
@@ -57,12 +59,11 @@ def savecreds():
     twofa = click.prompt("Pin >", hide_input=True)
     config = configparser.ConfigParser()
     config['CREDENTIALS'] = {'user_id': user_id,
-                                'password': password,
-                                'twofa': twofa}
+                             'password': password,
+                             'twofa': twofa}
     with open(os.path.join(app_dir, cred_file), "w") as fp:
         config.write(fp)
         click.echo(click.style("Saved credentials successfully", fg='green'))
-
 
 
 @zerodha.command()
@@ -90,8 +91,9 @@ def rm(config):
         except FileNotFoundError:
             click.echo("Could not find any credentials, you can save it again using 'jtrader zerodha savecreds'")
         else:
-            click.echo("Successfully deleted credentials config, you can save it again using 'jtrader zerodha savecreds`")
-    
+            click.echo(
+                "Successfully deleted credentials config, you can save it again using 'jtrader zerodha savecreds`")
+
     if config == "SESSION":
         try:
             os.remove(os.path.join(app_dir, session_file))
@@ -99,10 +101,6 @@ def rm(config):
             click.echo("Could not find the session config, you can save it again using 'jtrader zerodha startsession'")
         else:
             click.echo("Successfully deleted, you can save it again using 'jtrader zerodha startsession'")
-    
-
-
-
 
 
 if __name__ == "__main__":
