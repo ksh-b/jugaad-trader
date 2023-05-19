@@ -44,7 +44,7 @@ class Zerodha(KiteConnect):
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36",
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-            }
+        }
         self.reqsession.headers.update(headers)
         self.chunkjs = {}
         self.url_patch = '/oms'
@@ -107,15 +107,9 @@ class Zerodha(KiteConnect):
         return j
 
     def custom_headers(self):
-        h = {}
-        h['authorization'] = "enctoken {}".format(self.enc_token)
-        h['referer'] = 'https://kite.zerodha.com/dashboard'
-        h['x-kite-version'] = '2.9.2'
-        h['sec-fetch-site'] = 'same-origin'
-        h['sec-fetch-mode'] = 'cors'
-        h['sec-fetch-dest'] = 'empty'
-        h['x-kite-userid'] = self.user_id
-        return h
+        return {'authorization': "enctoken {}".format(self.enc_token), 'referer': 'https://kite.zerodha.com/dashboard',
+                'x-kite-version': '2.9.2', 'sec-fetch-site': 'same-origin', 'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty', 'x-kite-userid': self.user_id}
 
     def _request(self, route, method, url_args=None, params=None,
                  is_json=False, query_params=None):
@@ -138,16 +132,17 @@ class Zerodha(KiteConnect):
                                                                           headers=headers))
 
         try:
-            r = self.reqsession.request(method,
-                                        url,
-                                        json=params if (method in ["POST", "PUT"] and is_json) else None,
-                                        data=params if (method in ["POST", "PUT"] and not is_json) else None,
-                                        params=query_params,
-                                        headers=headers,
-                                        verify=not self.disable_ssl,
-                                        allow_redirects=True,
-                                        timeout=self.timeout,
-                                        proxies=self.proxies)
+            r = self.reqsession.request(
+                method,
+                url,
+                json=params if (method in ["POST", "PUT"] and is_json) else None,
+                data=params if (method in ["POST", "PUT"] and not is_json) else None,
+                params=query_params,
+                headers=headers,
+                verify=not self.disable_ssl,
+                allow_redirects=True,
+                timeout=self.timeout,
+                proxies=self.proxies)
             self.r = r
         except Exception as e:
             raise e
@@ -263,7 +258,7 @@ class Console(Zerodha):
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36",
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
             "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
-            }
+        }
         self.reqsession.headers.update(headers)
         self.console_session = ""
         self.public_token = ""
@@ -273,7 +268,6 @@ class Console(Zerodha):
         return {'referer': 'https://console.zerodha.com/', 'x-kite-version': '3', 'sec-fetch-site': 'same-origin',
                 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty',
                 'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.164 Safari/537.36"}
-
 
     def login(self):
         """
