@@ -13,9 +13,12 @@ Documentation
 
 Installation
 ############
-::
 
-    $ pip install jugaad-trader
+Original:
+```pip install jugaad-trader```
+
+This fork:
+```pip install https://github.com/ksh-b/jugaad-trader.git```
 
 Quick start for Zerodha
 ***********************
